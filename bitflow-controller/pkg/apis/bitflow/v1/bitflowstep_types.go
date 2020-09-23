@@ -54,8 +54,8 @@ type BitflowStep struct {
 // +k8s:openapi-gen=true
 type BitflowStepSpec struct {
 	// +kubebuilder:validation:Enum=one-to-one;all-to-one;"";singleton
-	Type         string              `json:"type,omitempty"`
-	Scheduler    string              `json:"scheduler,omitempty"`
+	Type string `json:"type,omitempty"`
+
 	NodeLabels   map[string][]string `json:"nodeLabels,omitempty"`
 	Ingest       []*IngestMatch      `json:"ingest,omitempty"`
 	Outputs      []*StepOutput       `json:"outputs,omitempty"`

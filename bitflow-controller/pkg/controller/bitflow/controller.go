@@ -8,8 +8,6 @@ import (
 	bitflowv1 "github.com/bitflow-stream/bitflow-k8s-operator/bitflow-controller/pkg/apis/bitflow/v1"
 	"github.com/bitflow-stream/bitflow-k8s-operator/bitflow-controller/pkg/common"
 	"github.com/bitflow-stream/bitflow-k8s-operator/bitflow-controller/pkg/config"
-	"github.com/bitflow-stream/bitflow-k8s-operator/bitflow-controller/pkg/resources"
-	"github.com/bitflow-stream/bitflow-k8s-operator/bitflow-controller/pkg/scheduler"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -50,14 +48,12 @@ type BitflowReconciler struct {
 	apiPort   int
 	idLabels  map[string]string
 
-	respawning      *common.RespawningPods
-	config          *config.Config
-	scheduler       *scheduler.Scheduler
-	resourceLimiter *resources.ResourceAssigner
-	statistic       *ReconcileStatistics
+	pods      *ManagedPods
+	config    *config.Config
+	statistic *ReconcileStatistics
 
-	recurringReconcileStarted  sync.Once
-	lastResourceReconciliation time.Time
+	recurringReconcileStarted sync.Once
+	lastSpawnRoutine          time.Time
 }
 
 func startReconciler(mgr manager.Manager, watchNamespace string) error {
@@ -67,14 +63,14 @@ func startReconciler(mgr manager.Manager, watchNamespace string) error {
 	}
 
 	reconciler := &BitflowReconciler{
-		client:     mgr.GetClient(),
-		scheme:     mgr.GetScheme(), // include the cache for sync-function
-		cache:      mgr.GetCache(),
-		respawning: common.NewRespawningPods(),
-		namespace:  watchNamespace,
-		ownPodIP:   params.ownPodIP,
-		apiPort:    params.apiPort,
-		idLabels:   params.controllerIdLabels,
+		client:    mgr.GetClient(),
+		scheme:    mgr.GetScheme(), // include the cache for sync-function
+		cache:     mgr.GetCache(),
+		pods:      NewManagedPods(),
+		namespace: watchNamespace,
+		ownPodIP:  params.ownPodIP,
+		apiPort:   params.apiPort,
+		idLabels:  params.controllerIdLabels,
 	}
 	if params.recordStatistics {
 		reconciler.statistic = new(ReconcileStatistics)
@@ -82,19 +78,6 @@ func startReconciler(mgr manager.Manager, watchNamespace string) error {
 
 	// Initialize various parts of the operator
 	reconciler.config = config.NewConfig(mgr.GetClient(), reconciler.namespace, params.configMapName)
-	reconciler.scheduler = &scheduler.Scheduler{
-		Client:    mgr.GetClient(),
-		Config:    reconciler.config,
-		IdLabels:  params.controllerIdLabels,
-		Namespace: reconciler.namespace,
-	}
-	reconciler.resourceLimiter = &resources.ResourceAssigner{
-		Client:     mgr.GetClient(),
-		Config:     reconciler.config,
-		Respawning: reconciler.respawning,
-		Namespace:  reconciler.namespace,
-		PodLabels:  params.controllerIdLabels,
-	}
 	reconciler.startRestApi(fmt.Sprintf(":%v", reconciler.apiPort))
 
 	// Test if Kubernetes connection works
@@ -116,9 +99,7 @@ func startReconciler(mgr manager.Manager, watchNamespace string) error {
 
 func (r *BitflowReconciler) startWatchers(mgr manager.Manager, params ControllerParameters) error {
 	err := mgr.GetFieldIndexer().IndexField(&corev1.Pod{}, "spec.nodeName", func(o runtime.Object) []string {
-		node := common.GetNodeName(o.(*corev1.Pod))
-		res := []string{node}
-		return res
+		return []string{common.GetTargetNode(o.(*corev1.Pod))}
 	})
 	if err != nil {
 		return err
@@ -239,7 +220,7 @@ func (r *BitflowReconciler) startRecurringReconcile(ctl controller.Controller) e
 			r.recurringReconcileStarted.Do(func() {
 				requests = []reconcile.Request{{
 					NamespacedName: types.NamespacedName{
-						Name:      STATE_VALIDATION_FAKE_STEP_NAME,
+						Name:      ReconcileLoopFakeStepName,
 						Namespace: r.namespace,
 					}}}
 			})
