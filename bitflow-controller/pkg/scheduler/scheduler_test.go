@@ -45,7 +45,7 @@ func (s *SchedulerTestSuite) Test_AdvancedScheduler_shouldMapPodsCorrectlyWithou
 			{
 				name:                    "n1",
 				allocatableCpu:          4000,
-				memory:                  64,
+				memory:                  640,
 				initialNumberOfPodSlots: 2,
 				podSlotScalingFactor:    2,
 				resourceLimit:           0.1,
@@ -53,7 +53,7 @@ func (s *SchedulerTestSuite) Test_AdvancedScheduler_shouldMapPodsCorrectlyWithou
 			{
 				name:                    "n2",
 				allocatableCpu:          4000,
-				memory:                  64,
+				memory:                  1280,
 				initialNumberOfPodSlots: 2,
 				podSlotScalingFactor:    2,
 				resourceLimit:           0.1,
@@ -61,7 +61,7 @@ func (s *SchedulerTestSuite) Test_AdvancedScheduler_shouldMapPodsCorrectlyWithou
 			{
 				name:                    "n3",
 				allocatableCpu:          4000,
-				memory:                  64,
+				memory:                  1280,
 				initialNumberOfPodSlots: 2,
 				podSlotScalingFactor:    2,
 				resourceLimit:           0.1,
@@ -242,10 +242,10 @@ func (s *SchedulerTestSuite) Test_AdvancedScheduler_shouldMapPodsCorrectlyWithou
 	s.Equal("n2", scheduledMap["p6"])
 	s.Equal("n2", scheduledMap["p7"])
 	s.Equal("n2", scheduledMap["p8"])
-	s.Equal("n3", scheduledMap["p9"])
-	s.Equal("n3", scheduledMap["p10"])
-	s.Equal("n3", scheduledMap["p11"])
-	s.Equal("n3", scheduledMap["p12"])
+	s.Equal("n2", scheduledMap["p9"])
+	s.Equal("n2", scheduledMap["p10"])
+	s.Equal("n2", scheduledMap["p11"])
+	s.Equal("n2", scheduledMap["p12"])
 	s.Equal("n3", scheduledMap["p13"])
 }
 
@@ -569,10 +569,11 @@ func (s *SchedulerTestSuite) Test_AdvancedScheduler_shouldRecognizeSchedulingHas
 		previousScheduling: scheduledMap,
 	}
 
-	schedulingChanged2, _, err2 := scheduler.ScheduleCheckingAllPermutations()
+	schedulingChanged2, scheduledMap2, err2 := scheduler.ScheduleCheckingAllPermutations()
 
 	s.Nil(err2)
 	s.False(schedulingChanged2)
+	println(scheduledMap2)
 }
 
 func (s *SchedulerTestSuite) Test_AdvancedScheduler_shouldRecognizeSchedulingHasChangedWithoutThreshold() {
@@ -683,8 +684,11 @@ func (s *SchedulerTestSuite) Test_AdvancedScheduler_shouldRecognizeSchedulingHas
 		},
 	}
 	scheduler = AdvancedScheduler{
-		nodes: nodes,
-		pods:  pods,
+		nodes:                          nodes,
+		pods:                           pods,
+		memoryPenalty:                  1_000_000,
+		executionTimePenaltyMultiplier: 2,
+		networkPenalty:                 200,
 	}
 
 	schedulingChanged1, scheduledMap, err1 := scheduler.ScheduleCheckingAllPermutations()
@@ -693,15 +697,18 @@ func (s *SchedulerTestSuite) Test_AdvancedScheduler_shouldRecognizeSchedulingHas
 	s.True(schedulingChanged1)
 
 	scheduler = AdvancedScheduler{
-		nodes:              nodes,
-		pods:               pods,
-		previousScheduling: scheduledMap,
+		nodes:                          nodes,
+		pods:                           pods,
+		previousScheduling:             scheduledMap,
+		memoryPenalty:                  1_000_000,
+		executionTimePenaltyMultiplier: 2,
+		networkPenalty:                 200,
 	}
 
 	schedulingChanged2, _, err2 := scheduler.ScheduleCheckingAllPermutations()
 
 	s.Nil(err2)
-	s.True(schedulingChanged2)
+	s.False(schedulingChanged2)
 }
 
 func (s *SchedulerTestSuite) testNewDistributionPenaltyLowerConsideringThreshold(previousPenalty float64, newPenalty float64, thresholdPercent float64, expectedOutcome bool) {
@@ -2028,7 +2035,7 @@ func (s *SchedulerTestSuite) Test_AdvancedScheduler_shouldFindGoodSchedulingInRe
 
 	s.Nil(err)
 	s.True(schedulingChanged)
-	penalty, err := CalculatePenalty(getSystemStateFromSchedulingMap(scheduler.nodes, scheduler.pods, scheduledMap), scheduler.networkPenalty, scheduler.memoryPenalty, scheduler.executionTimePenaltyMultiplier)
+	penalty, err := scheduler.calculatePenaltyFromSchedulingMap(scheduledMap)
 	s.Nil(err)
 	s.Equal(0.0, penalty)
 }

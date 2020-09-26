@@ -89,11 +89,14 @@ func CalculatePenaltyOptionallyPrintingErrors(state SystemState, networkPenalty 
 		}
 
 		for _, podData := range nodeState.pods {
-			executionTime := CalculateExecutionTime(cpuCoresPerPod, podData.curve)
-			if executionTime > podData.maximumExecutionTime {
-				penalty += (executionTime - podData.maximumExecutionTime) * executionTimePenaltyMultiplier
-				if printErrors {
-					log.Errorf("pod %s execution time is too high (wanted: %f, actual: %f)", podData.name, podData.maximumExecutionTime, executionTime)
+			// skip if maximumExecutionTime is not set
+			if podData.maximumExecutionTime != 0 {
+				executionTime := CalculateExecutionTime(cpuCoresPerPod, podData.curve)
+				if executionTime > podData.maximumExecutionTime {
+					penalty += (executionTime - podData.maximumExecutionTime) * executionTimePenaltyMultiplier
+					if printErrors {
+						log.Errorf("pod %s execution time is too high (wanted: %f, actual: %f)", podData.name, podData.maximumExecutionTime, executionTime)
+					}
 				}
 			}
 

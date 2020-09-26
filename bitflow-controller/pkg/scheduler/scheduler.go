@@ -386,6 +386,7 @@ func (as AdvancedScheduler) ScheduleCheckingAllPermutations() (bool, map[string]
 	bestDistributionState, bestDistributionPenalty, err := as.findBestSchedulingCheckingAllPermutations(systemState, as.pods)
 
 	if as.previousScheduling != nil {
+		// TODO only leave old scheduling if exactly the same pods and nodes are involved
 		previousPenalty, err := CalculatePenalty(as.getPreviousSystemState(), as.networkPenalty, as.memoryPenalty, as.executionTimePenaltyMultiplier)
 		if err == nil && !NewDistributionPenaltyIsLowerConsideringThreshold(previousPenalty, bestDistributionPenalty, as.thresholdPercent) {
 			return false, nil, nil
@@ -501,6 +502,10 @@ func getIndexSliceSortedByNumberOfPods(nodeStates []NodeState) []int {
 	return indexSlice
 }
 
+func (as AdvancedScheduler) calculatePenaltyFromSchedulingMap(schedulingMap map[string]string) (float64, error) {
+	return CalculatePenalty(getSystemStateFromSchedulingMap(as.nodes, as.pods, schedulingMap), as.networkPenalty, as.memoryPenalty, as.executionTimePenaltyMultiplier)
+}
+
 func getSystemStateFromSchedulingMap(nodes []*NodeData, pods []*PodData, scheduling map[string]string) SystemState {
 	systemState := SystemState{[]NodeState{}}
 
@@ -534,11 +539,16 @@ func removeLastPodFromSlice(pods []*PodData) []*PodData {
 }
 
 func NewDistributionPenaltyIsLowerConsideringThreshold(previousPenalty float64, newPenalty float64, thresholdPercent float64) bool {
-	var previousPenaltyMinusThreshold = previousPenalty * ((100 - thresholdPercent) / 100)
-	if newPenalty <= previousPenaltyMinusThreshold {
-		return true
+	if previousPenalty == 0 {
+		return false
 	}
-	return false
+
+	if thresholdPercent == 0 {
+		return newPenalty < previousPenalty
+	}
+
+	var previousPenaltyMinusThreshold = previousPenalty * ((100 - thresholdPercent) / 100)
+	return newPenalty <= previousPenaltyMinusThreshold
 }
 
 func (state SystemState) toString() string {
@@ -601,9 +611,6 @@ func validateAdvancedScheduler(scheduler AdvancedScheduler) error {
 	for _, podData := range scheduler.pods {
 		if podData.name == "" {
 			return errors.New("empty name in PodData")
-		}
-		if podData.receivesDataFrom == nil {
-			return errors.New("receivesDataFrom is nil")
 		}
 		if podData.curve == (Curve{}) {
 			return errors.New("empty curve")
