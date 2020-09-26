@@ -7,15 +7,15 @@ import (
 	"testing"
 )
 
-type SkdTestSuite struct {
+type SchedulerTestSuite struct {
 	common.AbstractTestSuite
 }
 
-func TestSkd(t *testing.T) {
-	suite.Run(t, new(SkdTestSuite))
+func TestScheduler(t *testing.T) {
+	suite.Run(t, new(SchedulerTestSuite))
 }
 
-func (s *SkdTestSuite) Test_EqualDistributionScheduler_shouldReturnCorrectMap() {
+func (s *SchedulerTestSuite) Test_EqualDistributionScheduler_shouldReturnCorrectMap() {
 	var scheduler Scheduler
 	scheduler = EqualDistributionScheduler{
 		nodeNames: []string{"n1", "n2", "n3"},
@@ -38,7 +38,7 @@ func (s *SkdTestSuite) Test_EqualDistributionScheduler_shouldReturnCorrectMap() 
 	s.Equal("n1", scheduledMap["p10"])
 }
 
-func (s *SkdTestSuite) Test_AdvancedScheduler_shouldMapPodsCorrectlyWithoutNetworkPenalty() {
+func (s *SchedulerTestSuite) Test_AdvancedScheduler_shouldMapPodsCorrectlyWithoutNetworkPenalty() {
 	var scheduler AdvancedScheduler
 	scheduler = AdvancedScheduler{
 		nodes: []*NodeData{
@@ -249,7 +249,7 @@ func (s *SkdTestSuite) Test_AdvancedScheduler_shouldMapPodsCorrectlyWithoutNetwo
 	s.Equal("n3", scheduledMap["p13"])
 }
 
-func (s *SkdTestSuite) Test_AdvancedScheduler_shouldMapPodsCorrectlyWithNetworkPenalty() {
+func (s *SchedulerTestSuite) Test_AdvancedScheduler_shouldMapPodsCorrectlyWithNetworkPenalty() {
 	var scheduler AdvancedScheduler
 	nodes := []*NodeData{
 		{
@@ -444,7 +444,7 @@ func (s *SkdTestSuite) Test_AdvancedScheduler_shouldMapPodsCorrectlyWithNetworkP
 	s.Equal(scheduledMap["p9"], scheduledMap["p8"])
 }
 
-func (s *SkdTestSuite) Test_AdvancedScheduler_shouldRecognizeSchedulingHasNotChangedWithThreshold() {
+func (s *SchedulerTestSuite) Test_AdvancedScheduler_shouldRecognizeSchedulingHasNotChangedWithThreshold() {
 	var scheduler AdvancedScheduler
 	nodes := []*NodeData{
 		{
@@ -575,7 +575,7 @@ func (s *SkdTestSuite) Test_AdvancedScheduler_shouldRecognizeSchedulingHasNotCha
 	s.False(schedulingChanged2)
 }
 
-func (s *SkdTestSuite) Test_AdvancedScheduler_shouldRecognizeSchedulingHasChangedWithoutThreshold() {
+func (s *SchedulerTestSuite) Test_AdvancedScheduler_shouldRecognizeSchedulingHasChangedWithoutThreshold() {
 	var scheduler AdvancedScheduler
 	nodes := []*NodeData{
 		{
@@ -704,14 +704,14 @@ func (s *SkdTestSuite) Test_AdvancedScheduler_shouldRecognizeSchedulingHasChange
 	s.True(schedulingChanged2)
 }
 
-func (s *SkdTestSuite) testNewDistributionPenaltyLowerConsideringThreshold(previousPenalty float64, newPenalty float64, thresholdPercent float64, expectedOutcome bool) {
+func (s *SchedulerTestSuite) testNewDistributionPenaltyLowerConsideringThreshold(previousPenalty float64, newPenalty float64, thresholdPercent float64, expectedOutcome bool) {
 	s.SubTest(fmt.Sprintf("previous%f:new%f:threshold%f->%v", previousPenalty, newPenalty, thresholdPercent, expectedOutcome), func() {
 		actualOutcome := NewDistributionPenaltyIsLowerConsideringThreshold(previousPenalty, newPenalty, thresholdPercent)
 		s.Equal(expectedOutcome, actualOutcome)
 	})
 }
 
-func (s *SkdTestSuite) Test_AdvancedScheduler_shouldDetermineIfNewDistributionPenaltyIsLowerConsideringThreshold() {
+func (s *SchedulerTestSuite) Test_AdvancedScheduler_shouldDetermineIfNewDistributionPenaltyIsLowerConsideringThreshold() {
 	s.testNewDistributionPenaltyLowerConsideringThreshold(20, 10, 0, true)
 	s.testNewDistributionPenaltyLowerConsideringThreshold(10, 20, 0, false)
 	s.testNewDistributionPenaltyLowerConsideringThreshold(1000, 500, 50, true)
@@ -720,7 +720,7 @@ func (s *SkdTestSuite) Test_AdvancedScheduler_shouldDetermineIfNewDistributionPe
 	s.testNewDistributionPenaltyLowerConsideringThreshold(100, 90.000001, 10, false)
 }
 
-func (s *SkdTestSuite) Test_AdvancedScheduler_shouldNotThrowErrorWhenAllNecessaryFieldsAreSet() {
+func (s *SchedulerTestSuite) Test_AdvancedScheduler_shouldNotThrowErrorWhenAllNecessaryFieldsAreSet() {
 	var scheduler = AdvancedScheduler{
 		nodes: []*NodeData{
 			{
@@ -752,7 +752,7 @@ func (s *SkdTestSuite) Test_AdvancedScheduler_shouldNotThrowErrorWhenAllNecessar
 	s.Nil(err)
 }
 
-func (s *SkdTestSuite) Test_AdvancedScheduler_shouldThrowErrorWhenNodeMemoryIsMissing() {
+func (s *SchedulerTestSuite) Test_AdvancedScheduler_shouldThrowErrorWhenNodeMemoryIsMissing() {
 	var scheduler = AdvancedScheduler{
 		nodes: []*NodeData{
 			{
@@ -783,7 +783,7 @@ func (s *SkdTestSuite) Test_AdvancedScheduler_shouldThrowErrorWhenNodeMemoryIsMi
 	s.NotNil(err)
 }
 
-func (s *SkdTestSuite) Test_AdvancedScheduler_shouldThrowErrorWhenNodeMemoryIs0() {
+func (s *SchedulerTestSuite) Test_AdvancedScheduler_shouldThrowErrorWhenNodeMemoryIs0() {
 	var scheduler = AdvancedScheduler{
 		nodes: []*NodeData{
 			{
@@ -815,7 +815,7 @@ func (s *SkdTestSuite) Test_AdvancedScheduler_shouldThrowErrorWhenNodeMemoryIs0(
 	s.NotNil(err)
 }
 
-func (s *SkdTestSuite) Test_AdvancedScheduler_shouldThrowErrorWhenNodeResourceLimitIsMissing() {
+func (s *SchedulerTestSuite) Test_AdvancedScheduler_shouldThrowErrorWhenNodeResourceLimitIsMissing() {
 	var scheduler = AdvancedScheduler{
 		nodes: []*NodeData{
 			{
@@ -846,7 +846,7 @@ func (s *SkdTestSuite) Test_AdvancedScheduler_shouldThrowErrorWhenNodeResourceLi
 	s.NotNil(err)
 }
 
-func (s *SkdTestSuite) Test_AdvancedScheduler_shouldThrowErrorWhenNodeResourceLimitIs0() {
+func (s *SchedulerTestSuite) Test_AdvancedScheduler_shouldThrowErrorWhenNodeResourceLimitIs0() {
 	var scheduler = AdvancedScheduler{
 		nodes: []*NodeData{
 			{
@@ -878,7 +878,7 @@ func (s *SkdTestSuite) Test_AdvancedScheduler_shouldThrowErrorWhenNodeResourceLi
 	s.NotNil(err)
 }
 
-func (s *SkdTestSuite) Test_AdvancedScheduler_shouldThrowErrorWhenPodMinimumMemoryIsMissing() {
+func (s *SchedulerTestSuite) Test_AdvancedScheduler_shouldThrowErrorWhenPodMinimumMemoryIsMissing() {
 	var scheduler = AdvancedScheduler{
 		nodes: []*NodeData{
 			{
@@ -909,7 +909,7 @@ func (s *SkdTestSuite) Test_AdvancedScheduler_shouldThrowErrorWhenPodMinimumMemo
 	s.NotNil(err)
 }
 
-func (s *SkdTestSuite) Test_AdvancedScheduler_shouldThrowErrorWhenPodMinimumMemoryIs0() {
+func (s *SchedulerTestSuite) Test_AdvancedScheduler_shouldThrowErrorWhenPodMinimumMemoryIs0() {
 	var scheduler = AdvancedScheduler{
 		nodes: []*NodeData{
 			{
@@ -941,7 +941,7 @@ func (s *SkdTestSuite) Test_AdvancedScheduler_shouldThrowErrorWhenPodMinimumMemo
 	s.NotNil(err)
 }
 
-func (s *SkdTestSuite) Test_AdvancedScheduler_shouldThrowErrorWhenThresholdIsLessThan0() {
+func (s *SchedulerTestSuite) Test_AdvancedScheduler_shouldThrowErrorWhenThresholdIsLessThan0() {
 	var scheduler = AdvancedScheduler{
 		nodes: []*NodeData{
 			{
@@ -974,7 +974,7 @@ func (s *SkdTestSuite) Test_AdvancedScheduler_shouldThrowErrorWhenThresholdIsLes
 	s.NotNil(err)
 }
 
-func (s *SkdTestSuite) Test_AdvancedScheduler_shouldThrowErrorWhenThresholdIsGreaterThan100() {
+func (s *SchedulerTestSuite) Test_AdvancedScheduler_shouldThrowErrorWhenThresholdIsGreaterThan100() {
 	var scheduler = AdvancedScheduler{
 		nodes: []*NodeData{
 			{
@@ -1007,7 +1007,7 @@ func (s *SkdTestSuite) Test_AdvancedScheduler_shouldThrowErrorWhenThresholdIsGre
 	s.NotNil(err)
 }
 
-func (s *SkdTestSuite) Test_shouldSortPodsTopologically() {
+func (s *SchedulerTestSuite) Test_shouldSortPodsTopologically() {
 	sortedPods, err := sortPodsUsingKahnsAlgorithm([]*PodData{
 		{
 			name:             "011(also-sends-to-010)",
@@ -1080,7 +1080,7 @@ func (s *SkdTestSuite) Test_shouldSortPodsTopologically() {
 	s.Equal(23.0, sortedPods[2].maximumExecutionTime)
 }
 
-func (s *SkdTestSuite) Test_shouldReturnIndicesSortedByNumberOfPods() {
+func (s *SchedulerTestSuite) Test_shouldReturnIndicesSortedByNumberOfPods() {
 	nodeStates := []NodeState{
 		{
 			node: &NodeData{
@@ -1157,7 +1157,7 @@ func (s *SkdTestSuite) Test_shouldReturnIndicesSortedByNumberOfPods() {
 	s.Equal("n1", nodeStates[indexSlice[4]].node.name)
 }
 
-func (s *SkdTestSuite) Test_shouldGetNodeIndexOfNodeStateContainingPod() {
+func (s *SchedulerTestSuite) Test_shouldGetNodeIndexOfNodeStateContainingPod() {
 	systemState := SystemState{
 		nodes: []NodeState{
 			{
@@ -1237,7 +1237,7 @@ func (s *SkdTestSuite) Test_shouldGetNodeIndexOfNodeStateContainingPod() {
 	s.NotNil(err)
 }
 
-func (s *SkdTestSuite) Test_AdvancedScheduler_shouldFindGoodScheduling() {
+func (s *SchedulerTestSuite) Test_AdvancedScheduler_shouldFindGoodScheduling() {
 	var scheduler = AdvancedScheduler{
 		nodes: []*NodeData{
 			{
@@ -1344,7 +1344,7 @@ func (s *SkdTestSuite) Test_AdvancedScheduler_shouldFindGoodScheduling() {
 	s.Equal("n2", schedulingMap["p5"])
 }
 
-func (s *SkdTestSuite) Test_AdvancedScheduler_shouldFindGoodSchedulingIfNetworkPenaltyPlaysARole() {
+func (s *SchedulerTestSuite) Test_AdvancedScheduler_shouldFindGoodSchedulingIfNetworkPenaltyPlaysARole() {
 	var scheduler = AdvancedScheduler{
 		nodes: []*NodeData{
 			{
@@ -1451,7 +1451,7 @@ func (s *SkdTestSuite) Test_AdvancedScheduler_shouldFindGoodSchedulingIfNetworkP
 	s.Equal("n2", schedulingMap["p5"])
 }
 
-func (s *SkdTestSuite) Test_AdvancedScheduler_shouldFindGoodSchedulingAndPreferExecutionTimeOverrunOverMemoryOverrun() {
+func (s *SchedulerTestSuite) Test_AdvancedScheduler_shouldFindGoodSchedulingAndPreferExecutionTimeOverrunOverMemoryOverrun() {
 	var scheduler = AdvancedScheduler{
 		nodes: []*NodeData{
 			{
@@ -1558,7 +1558,7 @@ func (s *SkdTestSuite) Test_AdvancedScheduler_shouldFindGoodSchedulingAndPreferE
 	s.Equal("n2", schedulingMap["p5"])
 }
 
-func (s *SkdTestSuite) Test_AdvancedScheduler_shouldFindGoodSchedulingInRealisticScenario() {
+func (s *SchedulerTestSuite) Test_AdvancedScheduler_shouldFindGoodSchedulingInRealisticScenario() {
 	var scheduler AdvancedScheduler
 	nodes := []*NodeData{
 		{
