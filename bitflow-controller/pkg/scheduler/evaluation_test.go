@@ -134,6 +134,4 @@ func (s *EvaluationTestSuite) Test_AdvancedScheduler_should() {
 
 	println(perfectPenalty)
 	println(actualPenalty)
-
-	println()
 }

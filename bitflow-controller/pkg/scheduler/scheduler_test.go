@@ -1015,7 +1015,7 @@ func (s *SchedulerTestSuite) Test_AdvancedScheduler_shouldThrowErrorWhenThreshol
 }
 
 func (s *SchedulerTestSuite) Test_shouldSortPodsTopologically() {
-	sortedPods, err := sortPodsUsingKahnsAlgorithm([]*PodData{
+	sortedPodNames, err := sortPodsUsingKahnsAlgorithm([]*PodData{
 		{
 			name:             "011(also-sends-to-010)",
 			receivesDataFrom: []string{"01"},
@@ -1068,23 +1068,14 @@ func (s *SchedulerTestSuite) Test_shouldSortPodsTopologically() {
 	})
 
 	s.Nil(err)
-	s.Equal("0", sortedPods[0].name)
-	s.Equal("00(also-sends-to-010)", sortedPods[1].name)
-	s.Equal("01", sortedPods[2].name)
-	s.Equal("002", sortedPods[3].name)
-	s.Equal("003", sortedPods[4].name)
-	s.Equal("011(also-sends-to-010)", sortedPods[5].name)
-	s.Equal("010(also-sends-to-001)", sortedPods[6].name)
-	s.Equal("001", sortedPods[7].name)
-
-	// making sure other fields are copied properly
-	s.Equal("test", sortedPods[2].dataSourceNodes[0])
-	s.Equal(1.0, sortedPods[2].curve.a)
-	s.Equal(2.0, sortedPods[2].curve.b)
-	s.Equal(3.0, sortedPods[2].curve.c)
-	s.Equal(4.0, sortedPods[2].curve.d)
-	s.Equal(22.0, sortedPods[2].minimumMemory)
-	s.Equal(23.0, sortedPods[2].maximumExecutionTime)
+	s.Equal("0", sortedPodNames[0])
+	s.Equal("00(also-sends-to-010)", sortedPodNames[1])
+	s.Equal("01", sortedPodNames[2])
+	s.Equal("002", sortedPodNames[3])
+	s.Equal("003", sortedPodNames[4])
+	s.Equal("011(also-sends-to-010)", sortedPodNames[5])
+	s.Equal("010(also-sends-to-001)", sortedPodNames[6])
+	s.Equal("001", sortedPodNames[7])
 }
 
 func (s *SchedulerTestSuite) Test_shouldReturnIndicesSortedByNumberOfPods() {

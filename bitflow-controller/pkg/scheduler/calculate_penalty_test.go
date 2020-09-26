@@ -166,7 +166,7 @@ func (s *CalculatePenaltyTestSuite) Test_shouldCalculatePenaltyForDifferentState
 				}}},
 		0,
 		0,
-		16.2861)
+		0)
 
 	s.testCalculatePenalty(
 		"network-penalty test",
@@ -196,7 +196,7 @@ func (s *CalculatePenaltyTestSuite) Test_shouldCalculatePenaltyForDifferentState
 				}}},
 		50,
 		0,
-		66.2861)
+		50)
 
 	s.testCalculatePenalty(
 		"memory-penalty, but pod has enough memory",
@@ -226,7 +226,7 @@ func (s *CalculatePenaltyTestSuite) Test_shouldCalculatePenaltyForDifferentState
 				}}},
 		0,
 		100,
-		16.2861)
+		0)
 
 	s.testCalculatePenalty(
 		"memory-penalty, pod does not have enough memory",
@@ -239,7 +239,7 @@ func (s *CalculatePenaltyTestSuite) Test_shouldCalculatePenaltyForDifferentState
 						memory:                  2000,
 						initialNumberOfPodSlots: 2,
 						podSlotScalingFactor:    2,
-						resourceLimit:           0.5,
+						resourceLimit:           0.3,
 					},
 					pods: []*PodData{
 						{
@@ -256,7 +256,7 @@ func (s *CalculatePenaltyTestSuite) Test_shouldCalculatePenaltyForDifferentState
 				}}},
 		0,
 		100,
-		66.2861)
+		70)
 }
 
 func (s *CalculatePenaltyTestSuite) Test_shouldRecognizeWhichPodsNodeContains() {

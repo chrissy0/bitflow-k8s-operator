@@ -84,9 +84,9 @@ type Curve struct {
 	a, b, c, d float64
 }
 
-func sortPodsUsingKahnsAlgorithm(pods []*PodData) ([]PodData, error) {
-	var initialPods []PodData
-	for _, pod := range pods {
+func sortPodsUsingKahnsAlgorithm(initialPods []*PodData) ([]string, error) {
+	var copiedPods []*PodData
+	for _, pod := range initialPods {
 		podCopy := PodData{
 			// TODO remove TODO at very end -> did fields get added to PodData? Add here too.
 			name:                 pod.name,
@@ -100,13 +100,13 @@ func sortPodsUsingKahnsAlgorithm(pods []*PodData) ([]PodData, error) {
 		copy(podCopy.dataSourceNodes, pod.dataSourceNodes)
 		copy(podCopy.receivesDataFrom, pod.receivesDataFrom)
 		copy(podCopy.sendsDataTo, pod.sendsDataTo)
-		initialPods = append(initialPods, podCopy)
+		copiedPods = append(copiedPods, &podCopy)
 	}
 
 	sortedPodNames := []string{}
 	noIncomingEdgePods := []*PodData{}
 
-	for _, pod := range pods {
+	for _, pod := range copiedPods {
 		if len(pod.receivesDataFrom) == 0 {
 			noIncomingEdgePods = append(noIncomingEdgePods, pod)
 		}
@@ -120,7 +120,7 @@ func sortPodsUsingKahnsAlgorithm(pods []*PodData) ([]PodData, error) {
 
 		for _, receiverPodName := range newlySortedPod.sendsDataTo {
 			var receiverPod *PodData
-			for _, potentialReceiverPod := range pods {
+			for _, potentialReceiverPod := range copiedPods {
 				if potentialReceiverPod.name == receiverPodName {
 					receiverPod = potentialReceiverPod
 					break
@@ -146,21 +146,21 @@ func sortPodsUsingKahnsAlgorithm(pods []*PodData) ([]PodData, error) {
 		}
 	}
 
-	for _, pod := range pods {
+	for _, pod := range copiedPods {
 		if len(pod.receivesDataFrom) != 0 || len(pod.sendsDataTo) != 0 {
 			return nil, errors.New(fmt.Sprintf("Pod %s has edge after sorting, make sure there is a 'receivesDataFrom' entry for every 'sendsDataTo' entry. Does the graph have a cycle?", pod.name))
 		}
 	}
-	sortedPods := []PodData{}
+	returnPodNames := []string{}
 	for _, podName := range sortedPodNames {
 		for _, pod := range initialPods {
 			if pod.name == podName {
-				sortedPods = append(sortedPods, pod)
+				returnPodNames = append(returnPodNames, pod.name)
 				break
 			}
 		}
 	}
-	return sortedPods, nil
+	return returnPodNames, nil
 }
 
 var calculationCount = 0
@@ -204,9 +204,19 @@ func (as AdvancedScheduler) Schedule() (bool, map[string]string, error) {
 }
 
 func (as AdvancedScheduler) findGoodScheduling(state SystemState, pods []*PodData) (SystemState, float64, error) {
-	sortedPods, err := sortPodsUsingKahnsAlgorithm(pods)
+	sortedPodNames, err := sortPodsUsingKahnsAlgorithm(pods)
 	if err != nil {
 		return state, -1, err
+	}
+
+	var sortedPods []PodData
+	for _, sortedPodName := range sortedPodNames {
+		for _, pod := range pods {
+			if pod.name == sortedPodName {
+				sortedPods = append(sortedPods, *pod)
+				break
+			}
+		}
 	}
 
 	for podIndex := range sortedPods {
