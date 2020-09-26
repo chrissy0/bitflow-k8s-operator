@@ -2016,18 +2016,19 @@ func (s *SchedulerTestSuite) Test_AdvancedScheduler_shouldFindGoodSchedulingInRe
 		},
 	}
 	scheduler = AdvancedScheduler{
-		nodes:            nodes,
-		pods:             pods,
-		networkPenalty:   500,
-		memoryPenalty:    100,
-		thresholdPercent: 10,
+		nodes:                          nodes,
+		pods:                           pods,
+		networkPenalty:                 500,
+		memoryPenalty:                  100,
+		executionTimePenaltyMultiplier: 1,
+		thresholdPercent:               10,
 	}
 
 	schedulingChanged, scheduledMap, err := scheduler.Schedule()
 
 	s.Nil(err)
 	s.True(schedulingChanged)
-	penalty, err := CalculatePenalty(getSystemStateFromSchedulingMap(scheduler.nodes, scheduler.pods, scheduledMap), scheduler.networkPenalty, scheduler.memoryPenalty)
+	penalty, err := CalculatePenalty(getSystemStateFromSchedulingMap(scheduler.nodes, scheduler.pods, scheduledMap), scheduler.networkPenalty, scheduler.memoryPenalty, scheduler.executionTimePenaltyMultiplier)
 	s.Nil(err)
 	s.Equal(0.0, penalty)
 }

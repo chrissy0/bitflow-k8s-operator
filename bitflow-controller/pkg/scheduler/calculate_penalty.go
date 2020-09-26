@@ -66,12 +66,16 @@ func GetMemoryPerPod(nodeState NodeState) (float64, error) {
 	return GetMemoryPerPodAddingPods(nodeState, 0)
 }
 
-func CalculatePenalty(state SystemState, networkPenalty float64, memoryPenalty float64) (float64, error) {
-	return CalculatePenaltyOptionallyPrintingErrors(state, networkPenalty, memoryPenalty, false)
+func CalculatePenalty(state SystemState, networkPenalty float64, memoryPenalty float64, executionTimePenaltyMultiplier float64) (float64, error) {
+	return CalculatePenaltyOptionallyPrintingErrors(state, networkPenalty, memoryPenalty, executionTimePenaltyMultiplier, false)
 }
 
-func CalculatePenaltyOptionallyPrintingErrors(state SystemState, networkPenalty float64, memoryPenalty float64, printErrors bool) (float64, error) {
+func CalculatePenaltyOptionallyPrintingErrors(state SystemState, networkPenalty float64, memoryPenalty float64, executionTimePenaltyMultiplier float64, printErrors bool) (float64, error) {
 	var penalty = 0.0
+
+	if executionTimePenaltyMultiplier == 0 {
+		executionTimePenaltyMultiplier = 1
+	}
 
 	for _, nodeState := range state.nodes {
 		cpuCoresPerPod, err := GetCpuCoresPerPod(nodeState)
@@ -87,7 +91,7 @@ func CalculatePenaltyOptionallyPrintingErrors(state SystemState, networkPenalty 
 		for _, podData := range nodeState.pods {
 			executionTime := CalculateExecutionTime(cpuCoresPerPod, podData.curve)
 			if executionTime > podData.maximumExecutionTime {
-				penalty += executionTime - podData.maximumExecutionTime
+				penalty += (executionTime - podData.maximumExecutionTime) * executionTimePenaltyMultiplier
 				if printErrors {
 					log.Errorf("pod %s execution time is too high (wanted: %f, actual: %f)", podData.name, podData.maximumExecutionTime, executionTime)
 				}

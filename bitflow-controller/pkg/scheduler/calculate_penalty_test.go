@@ -130,7 +130,7 @@ func (s *CalculatePenaltyTestSuite) Test_shouldCalculateExecutionTimeForDifferen
 
 func (s *CalculatePenaltyTestSuite) testCalculatePenalty(description string, state SystemState, networkPenalty float64, memoryPenalty float64, expectedPenalty float64) {
 	s.SubTest(fmt.Sprintf("calculatePenalty-networkPenalty:%f memoryPenalty:%f -> %f - %s", networkPenalty, memoryPenalty, expectedPenalty, description), func() {
-		actualPenalty, err := CalculatePenalty(state, networkPenalty, memoryPenalty)
+		actualPenalty, err := CalculatePenalty(state, networkPenalty, memoryPenalty, 1)
 
 		s.Nil(err)
 		s.assertAlmostEqual(actualPenalty, expectedPenalty)

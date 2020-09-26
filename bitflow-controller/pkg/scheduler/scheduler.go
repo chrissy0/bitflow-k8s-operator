@@ -38,12 +38,13 @@ func (eds EqualDistributionScheduler) Schedule() (bool, map[string]string, error
 
 // TODO make available outside of package
 type AdvancedScheduler struct {
-	nodes              []*NodeData
-	pods               []*PodData
-	networkPenalty     float64
-	memoryPenalty      float64
-	thresholdPercent   float64
-	previousScheduling map[string]string
+	nodes                          []*NodeData
+	pods                           []*PodData
+	networkPenalty                 float64
+	memoryPenalty                  float64
+	executionTimePenaltyMultiplier float64
+	thresholdPercent               float64
+	previousScheduling             map[string]string
 }
 
 type EqualDistributionScheduler struct {
@@ -180,7 +181,7 @@ func (as AdvancedScheduler) Schedule() (bool, map[string]string, error) {
 	distributionState, distributionPenalty, err := as.findGoodScheduling(systemState, as.pods)
 
 	if as.previousScheduling != nil {
-		previousPenalty, err := CalculatePenalty(as.getPreviousSystemState(), as.networkPenalty, as.memoryPenalty)
+		previousPenalty, err := CalculatePenalty(as.getPreviousSystemState(), as.networkPenalty, as.memoryPenalty, as.executionTimePenaltyMultiplier)
 		if err == nil && !NewDistributionPenaltyIsLowerConsideringThreshold(previousPenalty, distributionPenalty, as.thresholdPercent) {
 			return false, nil, nil
 		}
@@ -358,7 +359,7 @@ func (as AdvancedScheduler) findGoodScheduling(state SystemState, pods []*PodDat
 			log.Error(fmt.Sprintf("Scheduled pod %s randomly on node %s because it didn't fit on any node", sortedPods[podIndex].name, randomNodeState.node.name))
 		}
 	}
-	penalty, err := CalculatePenaltyOptionallyPrintingErrors(state, as.networkPenalty, as.memoryPenalty, true)
+	penalty, err := CalculatePenaltyOptionallyPrintingErrors(state, as.networkPenalty, as.memoryPenalty, as.executionTimePenaltyMultiplier, true)
 
 	if err != nil {
 		return SystemState{}, -1, err
@@ -385,7 +386,7 @@ func (as AdvancedScheduler) ScheduleCheckingAllPermutations() (bool, map[string]
 	bestDistributionState, bestDistributionPenalty, err := as.findBestSchedulingCheckingAllPermutations(systemState, as.pods)
 
 	if as.previousScheduling != nil {
-		previousPenalty, err := CalculatePenalty(as.getPreviousSystemState(), as.networkPenalty, as.memoryPenalty)
+		previousPenalty, err := CalculatePenalty(as.getPreviousSystemState(), as.networkPenalty, as.memoryPenalty, as.executionTimePenaltyMultiplier)
 		if err == nil && !NewDistributionPenaltyIsLowerConsideringThreshold(previousPenalty, bestDistributionPenalty, as.thresholdPercent) {
 			return false, nil, nil
 		}
@@ -409,7 +410,7 @@ func (as AdvancedScheduler) ScheduleCheckingAllPermutations() (bool, map[string]
 
 func (as AdvancedScheduler) findBestSchedulingCheckingAllPermutations(state SystemState, podsLeft []*PodData) (SystemState, float64, error) {
 	if len(podsLeft) == 0 {
-		penalty, err := CalculatePenalty(state, as.networkPenalty, as.memoryPenalty)
+		penalty, err := CalculatePenalty(state, as.networkPenalty, as.memoryPenalty, as.executionTimePenaltyMultiplier)
 		calculationCount++
 		return state, penalty, err
 	}
