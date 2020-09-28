@@ -181,7 +181,7 @@ func (as AdvancedScheduler) Schedule() (bool, map[string]string, error) {
 	distributionState, distributionPenalty, err := as.findGoodScheduling(systemState, as.pods)
 
 	if as.previousScheduling != nil {
-		previousPenalty, err := CalculatePenalty(as.getPreviousSystemState(), as.networkPenalty, as.memoryPenalty, as.executionTimePenaltyMultiplier)
+		previousPenalty, err := CalculatePenaltyOptionallyPrintingErrors(as.getPreviousSystemState(), as.networkPenalty, as.memoryPenalty, as.executionTimePenaltyMultiplier, false)
 		if err == nil && !NewDistributionPenaltyIsLowerConsideringThreshold(previousPenalty, distributionPenalty, as.thresholdPercent) {
 			return false, nil, nil
 		}
@@ -199,7 +199,7 @@ func (as AdvancedScheduler) Schedule() (bool, map[string]string, error) {
 		}
 	}
 
-	println(fmt.Sprintf("Penalty: %f", distributionPenalty))
+	//println(fmt.Sprintf("Penalty: %f", distributionPenalty))
 	return true, m, nil
 }
 
@@ -369,7 +369,7 @@ func (as AdvancedScheduler) findGoodScheduling(state SystemState, pods []*PodDat
 			log.Error(fmt.Sprintf("Scheduled pod %s randomly on node %s because it didn't fit on any node", sortedPods[podIndex].name, randomNodeState.node.name))
 		}
 	}
-	penalty, err := CalculatePenaltyOptionallyPrintingErrors(state, as.networkPenalty, as.memoryPenalty, as.executionTimePenaltyMultiplier, true)
+	penalty, err := CalculatePenaltyOptionallyPrintingErrors(state, as.networkPenalty, as.memoryPenalty, as.executionTimePenaltyMultiplier, false)
 
 	if err != nil {
 		return SystemState{}, -1, err
@@ -415,13 +415,13 @@ func (as AdvancedScheduler) ScheduleCheckingAllPermutations() (bool, map[string]
 		}
 	}
 
-	println(fmt.Sprintf("Penalty: %f\nCalculations: %d", bestDistributionPenalty, calculationCount))
+	//println(fmt.Sprintf("Penalty: %f\nCalculations: %d", bestDistributionPenalty, calculationCount))
 	return true, m, nil
 }
 
 func (as AdvancedScheduler) findBestSchedulingCheckingAllPermutations(state SystemState, podsLeft []*PodData) (SystemState, float64, error) {
 	if len(podsLeft) == 0 {
-		penalty, err := CalculatePenalty(state, as.networkPenalty, as.memoryPenalty, as.executionTimePenaltyMultiplier)
+		penalty, err := CalculatePenaltyOptionallyPrintingErrors(state, as.networkPenalty, as.memoryPenalty, as.executionTimePenaltyMultiplier, false)
 		calculationCount++
 		return state, penalty, err
 	}
@@ -513,7 +513,7 @@ func getIndexSliceSortedByNumberOfPods(nodeStates []NodeState) []int {
 }
 
 func (as AdvancedScheduler) calculatePenaltyFromSchedulingMap(schedulingMap map[string]string) (float64, error) {
-	return CalculatePenalty(getSystemStateFromSchedulingMap(as.nodes, as.pods, schedulingMap), as.networkPenalty, as.memoryPenalty, as.executionTimePenaltyMultiplier)
+	return CalculatePenaltyOptionallyPrintingErrors(getSystemStateFromSchedulingMap(as.nodes, as.pods, schedulingMap), as.networkPenalty, as.memoryPenalty, as.executionTimePenaltyMultiplier, false)
 }
 
 func getSystemStateFromSchedulingMap(nodes []*NodeData, pods []*PodData, scheduling map[string]string) SystemState {

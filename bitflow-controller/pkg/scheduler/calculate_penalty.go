@@ -103,11 +103,17 @@ func CalculatePenaltyOptionallyPrintingErrors(state SystemState, networkPenalty 
 			for _, receivesDataFrom := range podData.receivesDataFrom {
 				if !NodeContainsPod(nodeState, receivesDataFrom) {
 					penalty += networkPenalty
+					if printErrors {
+						log.Errorf("pod %s receives data from pod %s on different node", podData.name, receivesDataFrom)
+					}
 				}
 			}
 			for _, dataSourceNodeName := range podData.dataSourceNodes {
 				if nodeState.node.name != dataSourceNodeName {
 					penalty += networkPenalty
+					if printErrors {
+						log.Errorf("pod %s on node %s has data source on different node %s", podData.name, nodeState.node.name, dataSourceNodeName)
+					}
 				}
 			}
 			if memoryPerPod < podData.minimumMemory {
