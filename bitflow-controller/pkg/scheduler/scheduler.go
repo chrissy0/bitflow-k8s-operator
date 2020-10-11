@@ -5,6 +5,7 @@ import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"math/rand"
+	"time"
 )
 
 type Scheduler interface {
@@ -203,6 +204,14 @@ func (as AdvancedScheduler) Schedule() (bool, map[string]string, error) {
 	return true, m, nil
 }
 
+func makeRange(min, max int) []int {
+	a := make([]int, max-min+1)
+	for i := range a {
+		a[i] = min + i
+	}
+	return a
+}
+
 func (as AdvancedScheduler) findGoodScheduling(state SystemState, pods []*PodData) (SystemState, float64, error) {
 	sortedPodNames, err := sortPodsUsingKahnsAlgorithm(pods)
 	if err != nil {
@@ -226,7 +235,15 @@ func (as AdvancedScheduler) findGoodScheduling(state SystemState, pods []*PodDat
 		scheduledPod := false
 
 		// scheduling on dataSourceNode
-		for _, dataSourceNodeName := range sortedPods[podIndex].dataSourceNodes {
+		// random order
+		numberOfDataSourceNodes := len(sortedPods[podIndex].dataSourceNodes)
+		shuffledDataSourceNodeIndices := makeRange(0, numberOfDataSourceNodes-1)
+		rand.Seed(time.Now().UnixNano())
+		rand.Shuffle(numberOfDataSourceNodes, func(i, j int) {
+			shuffledDataSourceNodeIndices[i], shuffledDataSourceNodeIndices[j] = shuffledDataSourceNodeIndices[j], shuffledDataSourceNodeIndices[i]
+		})
+		for _, dataSourceNodeIndex := range shuffledDataSourceNodeIndices {
+			dataSourceNodeName := sortedPods[podIndex].dataSourceNodes[dataSourceNodeIndex]
 			dataSourceNodeStateIndex, err := getNodeStateIndexByName(dataSourceNodeName, state)
 			if err != nil {
 				return SystemState{}, -1, err
@@ -264,7 +281,15 @@ func (as AdvancedScheduler) findGoodScheduling(state SystemState, pods []*PodDat
 		}
 		// scheduling on node which contains receivesDataFrom pod
 		if scheduledPod == false {
-			for _, receivedDataFromPodName := range sortedPods[podIndex].receivesDataFrom {
+			// random order
+			numberOfReceivesDataFromNames := len(sortedPods[podIndex].receivesDataFrom)
+			shuffledReceivesDataFromNameIndices := makeRange(0, numberOfReceivesDataFromNames-1)
+			rand.Seed(time.Now().UnixNano())
+			rand.Shuffle(numberOfReceivesDataFromNames, func(i, j int) {
+				shuffledReceivesDataFromNameIndices[i], shuffledReceivesDataFromNameIndices[j] = shuffledReceivesDataFromNameIndices[j], shuffledReceivesDataFromNameIndices[i]
+			})
+			for _, receivesDataFromNameIndex := range shuffledReceivesDataFromNameIndices {
+				receivedDataFromPodName := sortedPods[podIndex].receivesDataFrom[receivesDataFromNameIndex]
 				receivesDataFromNodeStateIndex, err := getNodeIndexOfNodeStateContainingPod(receivedDataFromPodName, state)
 				if err != nil {
 					return SystemState{}, -1, err
