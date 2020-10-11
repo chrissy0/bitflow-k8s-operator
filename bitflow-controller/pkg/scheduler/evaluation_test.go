@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/bitflow-stream/bitflow-k8s-operator/bitflow-controller/pkg/common"
 	"github.com/stretchr/testify/suite"
+	"math"
 	"strconv"
 	"testing"
 	"time"
@@ -540,6 +541,7 @@ func (s *EvaluationTestSuite) xTest_AdvancedScheduler_shouldComparePenaltiesForS
 func (s *EvaluationTestSuite) xTest_AdvancedScheduler_shouldPrint3DGraphData() {
 	maxNumberOfNodes := 10
 	maxNumberOfPods := 10
+	numberOfIterations := 10
 
 	type Measurement struct {
 		numberOfNodes int
@@ -556,48 +558,57 @@ func (s *EvaluationTestSuite) xTest_AdvancedScheduler_shouldPrint3DGraphData() {
 		d: 15.899403720950454,
 	}
 
-	var scheduler AdvancedScheduler
-	scheduler = AdvancedScheduler{
-		networkPenalty:                 200,
-		memoryPenalty:                  1_000_000,
-		executionTimePenaltyMultiplier: 2,
-		thresholdPercent:               5,
-		nodes:                          []*NodeData{},
-		pods:                           []*PodData{},
-	}
-
-	for numberOfNodes := 1; numberOfNodes <= maxNumberOfNodes; numberOfNodes++ {
-		scheduler.pods = []*PodData{}
-		scheduler.nodes = append(scheduler.nodes,
-			&NodeData{
-				name:                    "n" + strconv.Itoa(numberOfNodes),
-				allocatableCpu:          4000,
-				memory:                  320,
-				initialNumberOfPodSlots: 2,
-				podSlotScalingFactor:    2,
-				resourceLimit:           0.1,
-			})
-		for numberOfPods := 1; numberOfPods <= maxNumberOfPods; numberOfPods++ {
-			scheduler.pods = append(scheduler.pods,
-				&PodData{
+	for iteration := 1; iteration <= numberOfIterations; iteration++ {
+		var scheduler AdvancedScheduler
+		scheduler = AdvancedScheduler{
+			networkPenalty:                 200,
+			memoryPenalty:                  1_000_000,
+			executionTimePenaltyMultiplier: 2,
+			thresholdPercent:               5,
+			nodes:                          []*NodeData{},
+			pods:                           []*PodData{},
+		}
+		for numberOfNodes := 1; numberOfNodes <= maxNumberOfNodes; numberOfNodes++ {
+			scheduler.pods = []*PodData{}
+			scheduler.nodes = append(scheduler.nodes,
+				&NodeData{
+					name:                    "n" + strconv.Itoa(numberOfNodes),
+					allocatableCpu:          4000,
+					memory:                  320,
+					initialNumberOfPodSlots: 2,
+					podSlotScalingFactor:    2,
+					resourceLimit:           0.1,
+				})
+			for numberOfPods := 1; numberOfPods <= maxNumberOfPods; numberOfPods++ {
+				println(fmt.Sprintf("i%d;n%d;p%d", iteration, numberOfNodes, numberOfPods))
+				podData := &PodData{
 					name:                 "p" + strconv.Itoa(numberOfPods),
 					dataSourceNodes:      []string{},
 					sendsDataTo:          []string{},
+					receivesDataFrom:     []string{},
 					curve:                curve,
 					minimumMemory:        16,
 					maximumExecutionTime: 200,
+				}
+				if numberOfPods == 1 {
+					podData.dataSourceNodes = append(podData.dataSourceNodes, "n1")
+				} else {
+					podData.receivesDataFrom = append(podData.receivesDataFrom, "p"+strconv.Itoa(numberOfPods-1))
+					scheduler.pods[len(scheduler.pods)-1].sendsDataTo = append(scheduler.pods[len(scheduler.pods)-1].sendsDataTo, "p"+strconv.Itoa(numberOfPods))
+				}
+				scheduler.pods = append(scheduler.pods, podData)
+
+				println(fmt.Sprintf("measuring %d nodes x %d pods", numberOfNodes, numberOfPods))
+				start := time.Now()
+				_, _, _ = scheduler.Schedule()
+				elapsed := time.Since(start)
+
+				measurements = append(measurements, Measurement{
+					numberOfNodes: numberOfNodes,
+					numberOfPods:  numberOfPods,
+					executionTime: elapsed,
 				})
-
-			println(fmt.Sprintf("measuring %d nodes x %d pods", numberOfNodes, numberOfPods))
-			start := time.Now()
-			_, _, _ = scheduler.Schedule()
-			elapsed := time.Since(start)
-
-			measurements = append(measurements, Measurement{
-				numberOfNodes: numberOfNodes,
-				numberOfPods:  numberOfPods,
-				executionTime: elapsed,
-			})
+			}
 		}
 	}
 
@@ -606,12 +617,124 @@ func (s *EvaluationTestSuite) xTest_AdvancedScheduler_shouldPrint3DGraphData() {
 		print(i)
 	}
 	println()
-	for _, measurement := range measurements {
+	numberOfUniqueMeasurementSetups := len(measurements) / numberOfIterations
+	for _, measurementIndex := range makeRange(0, numberOfUniqueMeasurementSetups-1) {
+		measurement := measurements[measurementIndex]
+		var accumulativeDuration time.Duration = 0
+		for _, i := range makeRange(0, numberOfIterations-1) {
+			currentMeasurement := measurements[measurementIndex+i*numberOfUniqueMeasurementSetups]
+			accumulativeDuration += currentMeasurement.executionTime
+		}
+		measurement.executionTime = accumulativeDuration
 		if measurement.numberOfPods == 1 {
 			print(measurement.numberOfNodes)
 			print(";")
 		}
-		print(fmt.Sprintf("%d;", measurement.executionTime.Milliseconds()))
+		print(fmt.Sprintf("%d;", measurement.executionTime.Nanoseconds()/int64(numberOfIterations)))
+		if measurement.numberOfPods == maxNumberOfPods {
+			println()
+		}
+	}
+}
+
+func (s *EvaluationTestSuite) Test_AdvancedScheduler_shouldPrint3DGraphDataMoreConnections() {
+	maxNumberOfNodes := 10
+	maxNumberOfPods := 10
+	numberOfIterations := 10
+
+	type Measurement struct {
+		numberOfNodes int
+		numberOfPods  int
+		executionTime time.Duration
+	}
+
+	var measurements []Measurement
+
+	curve := Curve{
+		a: 6.71881241016441,
+		b: 0.0486498280492762,
+		c: 2.0417306475862214,
+		d: 15.899403720950454,
+	}
+
+	for iteration := 1; iteration <= numberOfIterations; iteration++ {
+		var scheduler AdvancedScheduler
+		scheduler = AdvancedScheduler{
+			networkPenalty:                 200,
+			memoryPenalty:                  1_000_000,
+			executionTimePenaltyMultiplier: 2,
+			thresholdPercent:               5,
+			nodes:                          []*NodeData{},
+			pods:                           []*PodData{},
+		}
+		for numberOfNodes := 1; numberOfNodes <= maxNumberOfNodes; numberOfNodes++ {
+			scheduler.pods = []*PodData{}
+			scheduler.nodes = append(scheduler.nodes,
+				&NodeData{
+					name:                    "n" + strconv.Itoa(numberOfNodes),
+					allocatableCpu:          4000,
+					memory:                  320,
+					initialNumberOfPodSlots: 2,
+					podSlotScalingFactor:    2,
+					resourceLimit:           0.1,
+				})
+			for numberOfPods := 1; numberOfPods <= maxNumberOfPods; numberOfPods++ {
+				println(fmt.Sprintf("i%d;n%d;p%d", iteration, numberOfNodes, numberOfPods))
+				podData := &PodData{
+					name:                 "p" + strconv.Itoa(numberOfPods),
+					dataSourceNodes:      []string{},
+					sendsDataTo:          []string{},
+					receivesDataFrom:     []string{},
+					curve:                curve,
+					minimumMemory:        16,
+					maximumExecutionTime: 200,
+				}
+				if numberOfPods == 1 {
+					podData.dataSourceNodes = append(podData.dataSourceNodes, "n1")
+				} else {
+					podData.receivesDataFrom = append(podData.receivesDataFrom, "p"+strconv.Itoa(numberOfPods-1))
+					scheduler.pods[len(scheduler.pods)-1].sendsDataTo = append(scheduler.pods[len(scheduler.pods)-1].sendsDataTo, "p"+strconv.Itoa(numberOfPods))
+					if numberOfPods >= 4 {
+						connectedTo := math.Round(float64(numberOfPods) / 2.0)
+						podData.receivesDataFrom = append(podData.receivesDataFrom, "p"+strconv.Itoa(int(connectedTo)))
+						scheduler.pods[int64(connectedTo)-1].sendsDataTo = append(scheduler.pods[int64(connectedTo)-1].sendsDataTo, "p"+strconv.Itoa(numberOfPods))
+					}
+				}
+				scheduler.pods = append(scheduler.pods, podData)
+
+				println(fmt.Sprintf("measuring %d nodes x %d pods", numberOfNodes, numberOfPods))
+				start := time.Now()
+				_, _, _ = scheduler.Schedule()
+				elapsed := time.Since(start)
+
+				measurements = append(measurements, Measurement{
+					numberOfNodes: numberOfNodes,
+					numberOfPods:  numberOfPods,
+					executionTime: elapsed,
+				})
+			}
+		}
+	}
+
+	for i := 1; i <= maxNumberOfPods; i++ {
+		print(";")
+		print(i)
+	}
+	println()
+	numberOfUniqueMeasurementSetups := len(measurements) / numberOfIterations
+	for _, measurementIndex := range makeRange(0, numberOfUniqueMeasurementSetups-1) {
+		measurement := measurements[measurementIndex]
+		var accumulativeDuration time.Duration = 0
+		for _, i := range makeRange(0, numberOfIterations-1) {
+			currentMeasurement := measurements[measurementIndex+i*numberOfUniqueMeasurementSetups]
+			accumulativeDuration += currentMeasurement.executionTime
+		}
+		measurement.executionTime = accumulativeDuration
+		if measurement.numberOfPods == 1 {
+			print(measurement.numberOfNodes)
+			print(";")
+		}
+		print(fmt.Sprintf("%d;", measurement.executionTime.Nanoseconds()/int64(numberOfIterations)))
 		if measurement.numberOfPods == maxNumberOfPods {
 			println()
 		}
