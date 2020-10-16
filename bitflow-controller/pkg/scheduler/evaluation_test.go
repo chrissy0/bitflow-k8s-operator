@@ -189,6 +189,8 @@ func (s *EvaluationTestSuite) xTest_AdvancedScheduler_shouldComparePenaltiesForS
 func (s *EvaluationTestSuite) xTest_AdvancedScheduler_shouldComparePenaltiesForSimpleCase_variableMinimumMemory() {
 	// Auswertung: Penalties var.memory
 
+	numberOfIterations := 15
+
 	var scheduler AdvancedScheduler
 	curve := Curve{
 		a: 6.71881241016441,
@@ -228,47 +230,47 @@ func (s *EvaluationTestSuite) xTest_AdvancedScheduler_shouldComparePenaltiesForS
 			{
 				name:                 "p1",
 				receivesDataFrom:     []string{},
-				sendsDataTo:          []string{"p7", "p8"},
+				sendsDataTo:          []string{"p2", "p3", "p6", "p7", "p8", "p13"},
 				curve:                curve,
 				minimumMemory:        16,
 				maximumExecutionTime: 200,
 			},
 			{
 				name:                 "p2",
-				receivesDataFrom:     []string{"p10"},
-				sendsDataTo:          []string{"p9"},
+				receivesDataFrom:     []string{"p1"},
+				sendsDataTo:          []string{"p3", "p4", "p6", "p9", "p11", "p13"},
 				curve:                curve,
 				minimumMemory:        16,
 				maximumExecutionTime: 200,
 			},
 			{
 				name:                 "p3",
-				receivesDataFrom:     []string{},
-				sendsDataTo:          []string{"p9"},
+				receivesDataFrom:     []string{"p1", "p2"},
+				sendsDataTo:          []string{"p4", "p5", "p9", "p11", "p13"},
 				curve:                curve,
 				minimumMemory:        16,
 				maximumExecutionTime: 200,
 			},
 			{
 				name:                 "p4",
-				receivesDataFrom:     []string{},
-				sendsDataTo:          []string{},
+				receivesDataFrom:     []string{"p2", "p3"},
+				sendsDataTo:          []string{"p6", "p11", "p13"},
 				curve:                curve,
 				minimumMemory:        16,
 				maximumExecutionTime: 200,
 			},
 			{
 				name:                 "p5",
-				receivesDataFrom:     []string{},
-				sendsDataTo:          []string{},
+				receivesDataFrom:     []string{"p3"},
+				sendsDataTo:          []string{"p6", "p13"},
 				curve:                curve,
 				minimumMemory:        16,
 				maximumExecutionTime: 200,
 			},
 			{
 				name:                 "p6",
-				receivesDataFrom:     []string{},
-				sendsDataTo:          []string{},
+				receivesDataFrom:     []string{"p1", "p2", "p4", "p5"},
+				sendsDataTo:          []string{"p11", "p13"},
 				curve:                curve,
 				minimumMemory:        16,
 				maximumExecutionTime: 200,
@@ -276,7 +278,7 @@ func (s *EvaluationTestSuite) xTest_AdvancedScheduler_shouldComparePenaltiesForS
 			{
 				name:                 "p7",
 				receivesDataFrom:     []string{"p1"},
-				sendsDataTo:          []string{},
+				sendsDataTo:          []string{"p13"},
 				curve:                curve,
 				minimumMemory:        16,
 				maximumExecutionTime: 200,
@@ -284,7 +286,7 @@ func (s *EvaluationTestSuite) xTest_AdvancedScheduler_shouldComparePenaltiesForS
 			{
 				name:                 "p8",
 				receivesDataFrom:     []string{"p1"},
-				sendsDataTo:          []string{},
+				sendsDataTo:          []string{"p13"},
 				curve:                curve,
 				minimumMemory:        16,
 				maximumExecutionTime: 200,
@@ -292,7 +294,7 @@ func (s *EvaluationTestSuite) xTest_AdvancedScheduler_shouldComparePenaltiesForS
 			{
 				name:                 "p9",
 				receivesDataFrom:     []string{"p2", "p3"},
-				sendsDataTo:          []string{},
+				sendsDataTo:          []string{"p11", "p13"},
 				curve:                curve,
 				minimumMemory:        16,
 				maximumExecutionTime: 200,
@@ -300,15 +302,15 @@ func (s *EvaluationTestSuite) xTest_AdvancedScheduler_shouldComparePenaltiesForS
 			{
 				name:                 "p10",
 				receivesDataFrom:     []string{},
-				sendsDataTo:          []string{"p2"},
+				sendsDataTo:          []string{"p11", "p13"},
 				curve:                curve,
 				minimumMemory:        16,
 				maximumExecutionTime: 200,
 			},
 			{
 				name:                 "p11",
-				receivesDataFrom:     []string{},
-				sendsDataTo:          []string{},
+				receivesDataFrom:     []string{"p2", "p3", "p4", "p6", "p9", "p10"},
+				sendsDataTo:          []string{"p13"},
 				curve:                curve,
 				minimumMemory:        16,
 				maximumExecutionTime: 200,
@@ -316,14 +318,14 @@ func (s *EvaluationTestSuite) xTest_AdvancedScheduler_shouldComparePenaltiesForS
 			{
 				name:                 "p12",
 				receivesDataFrom:     []string{},
-				sendsDataTo:          []string{},
+				sendsDataTo:          []string{"p13"},
 				curve:                curve,
 				minimumMemory:        16,
 				maximumExecutionTime: 200,
 			},
 			{
 				name:                 "p13",
-				receivesDataFrom:     []string{},
+				receivesDataFrom:     []string{"p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9", "p10", "p11", "p12"},
 				sendsDataTo:          []string{},
 				curve:                curve,
 				minimumMemory:        16,
@@ -336,29 +338,45 @@ func (s *EvaluationTestSuite) xTest_AdvancedScheduler_shouldComparePenaltiesForS
 		thresholdPercent:               10,
 	}
 
-	println("minimumMemory;ms_perfect;penalty_perfect;ms_actual;penalty_actual")
+	println(fmt.Sprintf("%d iterations", numberOfIterations))
+	println("minimumMemory;ns_perfect_avg;penalty_perfect_avg;ns_actual_avg;penalty_actual_avg")
 	for minimumMemory := 1; minimumMemory <= 32; minimumMemory++ {
 		for _, podData := range scheduler.pods {
 			podData.minimumMemory = float64(minimumMemory)
 		}
 
-		start := time.Now()
-		_, perfectSchedulingMap, errPerfectScheduling := scheduler.ScheduleCheckingAllPermutations()
-		elapsedPerfectScheduling := time.Since(start)
-		start = time.Now()
-		_, actualSchedulingMap, errActualScheduling := scheduler.Schedule()
-		elapsedActualScheduling := time.Since(start)
+		var elapsedPerfectSchedulingTotalNs float64 = 0
+		var elapsedActualSchedulingTotalNs float64 = 0.0
+		var perfectPenaltyTotal float64 = 0.0
+		var actualPenaltyTotal float64 = 0.0
+		for i := 0; i < numberOfIterations; i++ {
+			start := time.Now()
+			_, perfectSchedulingMap, errPerfectScheduling := scheduler.ScheduleCheckingAllPermutations()
+			elapsedPerfectScheduling := time.Since(start)
+			start = time.Now()
+			_, actualSchedulingMap, errActualScheduling := scheduler.Schedule()
+			elapsedActualScheduling := time.Since(start)
 
-		s.Nil(errPerfectScheduling)
-		s.Nil(errActualScheduling)
+			s.Nil(errPerfectScheduling)
+			s.Nil(errActualScheduling)
 
-		perfectPenalty, errPerfectPenalty := scheduler.calculatePenaltyFromSchedulingMap(perfectSchedulingMap)
-		actualPenalty, errActualPenalty := scheduler.calculatePenaltyFromSchedulingMap(actualSchedulingMap)
+			perfectPenalty, errPerfectPenalty := scheduler.calculatePenaltyFromSchedulingMap(perfectSchedulingMap)
+			actualPenalty, errActualPenalty := scheduler.calculatePenaltyFromSchedulingMap(actualSchedulingMap)
 
-		s.Nil(errPerfectPenalty)
-		s.Nil(errActualPenalty)
+			s.Nil(errPerfectPenalty)
+			s.Nil(errActualPenalty)
 
-		println(fmt.Sprintf("%d;%d;%f;%d;%f", minimumMemory, elapsedPerfectScheduling.Milliseconds(), perfectPenalty, elapsedActualScheduling.Milliseconds(), actualPenalty))
+			elapsedPerfectSchedulingTotalNs += float64(elapsedPerfectScheduling.Nanoseconds())
+			elapsedActualSchedulingTotalNs += float64(elapsedActualScheduling.Nanoseconds())
+			perfectPenaltyTotal += perfectPenalty
+			actualPenaltyTotal += actualPenalty
+		}
+		println(fmt.Sprintf("%d;%f;%f;%f;%f",
+			minimumMemory,
+			elapsedPerfectSchedulingTotalNs/float64(numberOfIterations),
+			perfectPenaltyTotal/float64(numberOfIterations),
+			elapsedActualSchedulingTotalNs/float64(numberOfIterations),
+			actualPenaltyTotal/float64(numberOfIterations)))
 	}
 }
 
@@ -637,7 +655,7 @@ func (s *EvaluationTestSuite) xTest_AdvancedScheduler_shouldPrint3DGraphData() {
 	}
 }
 
-func (s *EvaluationTestSuite) Test_AdvancedScheduler_shouldPrint3DGraphDataMoreConnections() {
+func (s *EvaluationTestSuite) xTest_AdvancedScheduler_shouldPrint3DGraphDataMoreConnections() {
 	maxNumberOfNodes := 10
 	maxNumberOfPods := 10
 	numberOfIterations := 10
