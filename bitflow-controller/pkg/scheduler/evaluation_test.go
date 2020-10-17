@@ -758,3 +758,58 @@ func (s *EvaluationTestSuite) xTest_AdvancedScheduler_shouldPrint3DGraphDataMore
 		}
 	}
 }
+
+func (s *EvaluationTestSuite) xTest_AdvancedScheduler_shouldIterateOverNumber() {
+	maxNumberOfNodes := 200
+	totalNumberOfPods := 200
+
+	curve := Curve{
+		a: 6.71881241016441,
+		b: 0.0486498280492762,
+		c: 2.0417306475862214,
+		d: 15.899403720950454,
+	}
+
+	var scheduler AdvancedScheduler
+	scheduler = AdvancedScheduler{
+		networkPenalty:                 200,
+		memoryPenalty:                  1_000_000,
+		executionTimePenaltyMultiplier: 2,
+		thresholdPercent:               5,
+		nodes:                          []*NodeData{},
+		pods:                           []*PodData{},
+	}
+
+	for numberOfPods := 1; numberOfPods <= totalNumberOfPods; numberOfPods++ {
+		podData := &PodData{
+			name:                 "p" + strconv.Itoa(numberOfPods),
+			dataSourceNodes:      []string{},
+			sendsDataTo:          []string{},
+			receivesDataFrom:     []string{},
+			curve:                curve,
+			minimumMemory:        16,
+			maximumExecutionTime: 200,
+		}
+		scheduler.pods = append(scheduler.pods, podData)
+	}
+
+	for numberOfNodes := 1; numberOfNodes <= maxNumberOfNodes; numberOfNodes++ {
+		scheduler.nodes = []*NodeData{}
+		for currentNumberOfNodes := 1; currentNumberOfNodes <= numberOfNodes; currentNumberOfNodes++ {
+			scheduler.nodes = append(scheduler.nodes,
+				&NodeData{
+					name:                    "n" + strconv.Itoa(numberOfNodes),
+					allocatableCpu:          4000,
+					memory:                  320,
+					initialNumberOfPodSlots: 2,
+					podSlotScalingFactor:    2,
+					resourceLimit:           0.1,
+				})
+		}
+
+		print(numberOfNodes)
+		print(";")
+		_, _, _ = scheduler.Schedule()
+
+	}
+}
