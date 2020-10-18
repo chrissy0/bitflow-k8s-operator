@@ -3,7 +3,6 @@ package scheduler
 import (
 	"errors"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"math/rand"
 	"time"
 )
@@ -391,7 +390,7 @@ func (as AdvancedScheduler) findGoodScheduling(state SystemState, pods []*PodDat
 			randomNodeState := &state.nodes[randomIndex]
 			randomNodeState.pods = append(randomNodeState.pods, &sortedPods[podIndex])
 			scheduledPod = true
-			log.Error(fmt.Sprintf("Scheduled pod %s randomly on node %s because it didn't fit on any node", sortedPods[podIndex].name, randomNodeState.node.name))
+			// log.Error(fmt.Sprintf("Scheduled pod %s randomly on node %s because it didn't fit on any node", sortedPods[podIndex].name, randomNodeState.node.name)) // TODO reenable
 		}
 	}
 	penalty, err := CalculatePenaltyOptionallyPrintingErrors(state, as.networkPenalty, as.memoryPenalty, as.executionTimePenaltyMultiplier, false)
