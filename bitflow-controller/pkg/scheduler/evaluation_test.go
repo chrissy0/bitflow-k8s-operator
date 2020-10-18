@@ -383,6 +383,8 @@ func (s *EvaluationTestSuite) xTest_AdvancedScheduler_shouldComparePenaltiesForS
 func (s *EvaluationTestSuite) Test_AdvancedScheduler_shouldComparePenaltiesForSimpleCase_variableMaximumExecutionTime() {
 	// Auswertung: Penalties var.maxExecutionTime
 
+	numberOfIterations := 15
+
 	var scheduler AdvancedScheduler
 	curve := Curve{
 		a: 6.71881241016441,
@@ -530,29 +532,45 @@ func (s *EvaluationTestSuite) Test_AdvancedScheduler_shouldComparePenaltiesForSi
 		thresholdPercent:               10,
 	}
 
+	println(fmt.Sprintf("%d iterations", numberOfIterations))
 	println("maximumExecutionTime;ns_perfect;penalty_perfect;ns_actual;penalty_actual")
-	for maximumExecutionTime := 50; maximumExecutionTime <= 3000; maximumExecutionTime += 10 {
+	for maximumExecutionTime := 50; maximumExecutionTime <= 3000; maximumExecutionTime += 50 {
 		for _, podData := range scheduler.pods {
 			podData.maximumExecutionTime = float64(maximumExecutionTime)
 		}
+		var elapsedPerfectSchedulingTotalNs float64 = 0
+		var elapsedActualSchedulingTotalNs float64 = 0.0
+		var perfectPenaltyTotal float64 = 0.0
+		var actualPenaltyTotal float64 = 0.0
+		for i := 0; i < numberOfIterations; i++ {
+			start := time.Now()
+			_, perfectSchedulingMap, errPerfectScheduling := scheduler.ScheduleCheckingAllPermutations()
+			elapsedPerfectScheduling := time.Since(start)
+			start = time.Now()
+			_, actualSchedulingMap, errActualScheduling := scheduler.Schedule()
+			elapsedActualScheduling := time.Since(start)
 
-		start := time.Now()
-		_, perfectSchedulingMap, errPerfectScheduling := scheduler.ScheduleCheckingAllPermutations()
-		elapsedPerfectScheduling := time.Since(start)
-		start = time.Now()
-		_, actualSchedulingMap, errActualScheduling := scheduler.Schedule()
-		elapsedActualScheduling := time.Since(start)
+			s.Nil(errPerfectScheduling)
+			s.Nil(errActualScheduling)
 
-		s.Nil(errPerfectScheduling)
-		s.Nil(errActualScheduling)
+			perfectPenalty, errPerfectPenalty := scheduler.calculatePenaltyFromSchedulingMap(perfectSchedulingMap)
+			actualPenalty, errActualPenalty := scheduler.calculatePenaltyFromSchedulingMap(actualSchedulingMap)
 
-		perfectPenalty, errPerfectPenalty := scheduler.calculatePenaltyFromSchedulingMap(perfectSchedulingMap)
-		actualPenalty, errActualPenalty := scheduler.calculatePenaltyFromSchedulingMap(actualSchedulingMap)
+			s.Nil(errPerfectPenalty)
+			s.Nil(errActualPenalty)
 
-		s.Nil(errPerfectPenalty)
-		s.Nil(errActualPenalty)
+			elapsedPerfectSchedulingTotalNs += float64(elapsedPerfectScheduling.Nanoseconds())
+			elapsedActualSchedulingTotalNs += float64(elapsedActualScheduling.Nanoseconds())
+			perfectPenaltyTotal += perfectPenalty
+			actualPenaltyTotal += actualPenalty
+		}
 
-		println(fmt.Sprintf("%d;%d;%f;%d;%f", maximumExecutionTime, elapsedPerfectScheduling.Nanoseconds(), perfectPenalty, elapsedActualScheduling.Nanoseconds(), actualPenalty))
+		println(fmt.Sprintf("%d;%f;%f;%f;%f",
+			maximumExecutionTime,
+			elapsedPerfectSchedulingTotalNs/float64(numberOfIterations),
+			perfectPenaltyTotal/float64(numberOfIterations),
+			elapsedActualSchedulingTotalNs/float64(numberOfIterations),
+			actualPenaltyTotal/float64(numberOfIterations)))
 	}
 }
 
