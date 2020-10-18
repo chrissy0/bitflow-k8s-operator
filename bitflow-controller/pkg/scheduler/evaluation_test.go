@@ -187,7 +187,7 @@ func (s *EvaluationTestSuite) xTest_AdvancedScheduler_shouldComparePenaltiesForS
 }
 
 func (s *EvaluationTestSuite) xTest_AdvancedScheduler_shouldComparePenaltiesForSimpleCase_variableMinimumMemory() {
-	// Auswertung: Penalties var.memory
+	// Auswertung: Penalties var.minMemory
 
 	numberOfIterations := 15
 
