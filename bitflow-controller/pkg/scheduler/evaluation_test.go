@@ -380,8 +380,8 @@ func (s *EvaluationTestSuite) xTest_AdvancedScheduler_shouldComparePenaltiesForS
 	}
 }
 
-func (s *EvaluationTestSuite) xTest_AdvancedScheduler_shouldComparePenaltiesForSimpleCase_variableMaximumExecutionTime() {
-	// Auswertung: Penalties var.executionTime
+func (s *EvaluationTestSuite) Test_AdvancedScheduler_shouldComparePenaltiesForSimpleCase_variableMaximumExecutionTime() {
+	// Auswertung: Penalties var.maxExecutionTime
 
 	var scheduler AdvancedScheduler
 	curve := Curve{
@@ -422,47 +422,47 @@ func (s *EvaluationTestSuite) xTest_AdvancedScheduler_shouldComparePenaltiesForS
 			{
 				name:                 "p1",
 				receivesDataFrom:     []string{},
-				sendsDataTo:          []string{"p7", "p8"},
+				sendsDataTo:          []string{"p2", "p3", "p6", "p7", "p8", "p13"},
 				curve:                curve,
 				minimumMemory:        16,
 				maximumExecutionTime: 200,
 			},
 			{
 				name:                 "p2",
-				receivesDataFrom:     []string{"p10"},
-				sendsDataTo:          []string{"p9"},
+				receivesDataFrom:     []string{"p1"},
+				sendsDataTo:          []string{"p3", "p4", "p6", "p9", "p11", "p13"},
 				curve:                curve,
 				minimumMemory:        16,
 				maximumExecutionTime: 200,
 			},
 			{
 				name:                 "p3",
-				receivesDataFrom:     []string{},
-				sendsDataTo:          []string{"p9"},
+				receivesDataFrom:     []string{"p1", "p2"},
+				sendsDataTo:          []string{"p4", "p5", "p9", "p11", "p13"},
 				curve:                curve,
 				minimumMemory:        16,
 				maximumExecutionTime: 200,
 			},
 			{
 				name:                 "p4",
-				receivesDataFrom:     []string{},
-				sendsDataTo:          []string{},
+				receivesDataFrom:     []string{"p2", "p3"},
+				sendsDataTo:          []string{"p6", "p11", "p13"},
 				curve:                curve,
 				minimumMemory:        16,
 				maximumExecutionTime: 200,
 			},
 			{
 				name:                 "p5",
-				receivesDataFrom:     []string{},
-				sendsDataTo:          []string{},
+				receivesDataFrom:     []string{"p3"},
+				sendsDataTo:          []string{"p6", "p13"},
 				curve:                curve,
 				minimumMemory:        16,
 				maximumExecutionTime: 200,
 			},
 			{
 				name:                 "p6",
-				receivesDataFrom:     []string{},
-				sendsDataTo:          []string{},
+				receivesDataFrom:     []string{"p1", "p2", "p4", "p5"},
+				sendsDataTo:          []string{"p11", "p13"},
 				curve:                curve,
 				minimumMemory:        16,
 				maximumExecutionTime: 200,
@@ -470,7 +470,7 @@ func (s *EvaluationTestSuite) xTest_AdvancedScheduler_shouldComparePenaltiesForS
 			{
 				name:                 "p7",
 				receivesDataFrom:     []string{"p1"},
-				sendsDataTo:          []string{},
+				sendsDataTo:          []string{"p13"},
 				curve:                curve,
 				minimumMemory:        16,
 				maximumExecutionTime: 200,
@@ -478,7 +478,7 @@ func (s *EvaluationTestSuite) xTest_AdvancedScheduler_shouldComparePenaltiesForS
 			{
 				name:                 "p8",
 				receivesDataFrom:     []string{"p1"},
-				sendsDataTo:          []string{},
+				sendsDataTo:          []string{"p13"},
 				curve:                curve,
 				minimumMemory:        16,
 				maximumExecutionTime: 200,
@@ -486,7 +486,7 @@ func (s *EvaluationTestSuite) xTest_AdvancedScheduler_shouldComparePenaltiesForS
 			{
 				name:                 "p9",
 				receivesDataFrom:     []string{"p2", "p3"},
-				sendsDataTo:          []string{},
+				sendsDataTo:          []string{"p11", "p13"},
 				curve:                curve,
 				minimumMemory:        16,
 				maximumExecutionTime: 200,
@@ -494,15 +494,15 @@ func (s *EvaluationTestSuite) xTest_AdvancedScheduler_shouldComparePenaltiesForS
 			{
 				name:                 "p10",
 				receivesDataFrom:     []string{},
-				sendsDataTo:          []string{"p2"},
+				sendsDataTo:          []string{"p11", "p13"},
 				curve:                curve,
 				minimumMemory:        16,
 				maximumExecutionTime: 200,
 			},
 			{
 				name:                 "p11",
-				receivesDataFrom:     []string{},
-				sendsDataTo:          []string{},
+				receivesDataFrom:     []string{"p2", "p3", "p4", "p6", "p9", "p10"},
+				sendsDataTo:          []string{"p13"},
 				curve:                curve,
 				minimumMemory:        16,
 				maximumExecutionTime: 200,
@@ -510,28 +510,28 @@ func (s *EvaluationTestSuite) xTest_AdvancedScheduler_shouldComparePenaltiesForS
 			{
 				name:                 "p12",
 				receivesDataFrom:     []string{},
-				sendsDataTo:          []string{},
+				sendsDataTo:          []string{"p13"},
 				curve:                curve,
 				minimumMemory:        16,
 				maximumExecutionTime: 200,
 			},
 			{
 				name:                 "p13",
-				receivesDataFrom:     []string{},
+				receivesDataFrom:     []string{"p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9", "p10", "p11", "p12"},
 				sendsDataTo:          []string{},
 				curve:                curve,
 				minimumMemory:        16,
 				maximumExecutionTime: 200,
 			},
 		},
-		networkPenalty:                 1_000_000,
+		networkPenalty:                 200,
 		memoryPenalty:                  1_000_000,
 		executionTimePenaltyMultiplier: 2,
 		thresholdPercent:               10,
 	}
 
-	println("maximumExecutionTime;ms_perfect;penalty_perfect;ms_actual;penalty_actual")
-	for maximumExecutionTime := 50; maximumExecutionTime <= 3000; maximumExecutionTime += 50 {
+	println("maximumExecutionTime;ns_perfect;penalty_perfect;ns_actual;penalty_actual")
+	for maximumExecutionTime := 50; maximumExecutionTime <= 3000; maximumExecutionTime += 10 {
 		for _, podData := range scheduler.pods {
 			podData.maximumExecutionTime = float64(maximumExecutionTime)
 		}
@@ -552,7 +552,7 @@ func (s *EvaluationTestSuite) xTest_AdvancedScheduler_shouldComparePenaltiesForS
 		s.Nil(errPerfectPenalty)
 		s.Nil(errActualPenalty)
 
-		println(fmt.Sprintf("%d;%d;%f;%d;%f", maximumExecutionTime, elapsedPerfectScheduling.Milliseconds(), perfectPenalty, elapsedActualScheduling.Milliseconds(), actualPenalty))
+		println(fmt.Sprintf("%d;%d;%f;%d;%f", maximumExecutionTime, elapsedPerfectScheduling.Nanoseconds(), perfectPenalty, elapsedActualScheduling.Nanoseconds(), actualPenalty))
 	}
 }
 
