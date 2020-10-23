@@ -380,7 +380,7 @@ func (s *EvaluationTestSuite) xTest_AdvancedScheduler_shouldComparePenaltiesForS
 	}
 }
 
-func (s *EvaluationTestSuite) Test_AdvancedScheduler_shouldComparePenaltiesForSimpleCase_variableMaximumExecutionTime() {
+func (s *EvaluationTestSuite) xTest_AdvancedScheduler_shouldComparePenaltiesForSimpleCase_variableMaximumExecutionTime() {
 	// Auswertung: Penalties var.maxExecutionTime
 
 	numberOfIterations := 15
@@ -574,9 +574,9 @@ func (s *EvaluationTestSuite) Test_AdvancedScheduler_shouldComparePenaltiesForSi
 	}
 }
 
-func (s *EvaluationTestSuite) xTest_AdvancedScheduler_shouldPrint3DGraphData() {
-	maxNumberOfNodes := 10
-	maxNumberOfPods := 10
+func (s *EvaluationTestSuite) Test_AdvancedScheduler_shouldPrint3DGraphData() {
+	maxNumberOfNodes := 200
+	maxNumberOfPods := 200
 	numberOfIterations := 10
 
 	type Measurement struct {
@@ -674,8 +674,8 @@ func (s *EvaluationTestSuite) xTest_AdvancedScheduler_shouldPrint3DGraphData() {
 }
 
 func (s *EvaluationTestSuite) xTest_AdvancedScheduler_shouldPrint3DGraphDataMoreConnections() {
-	maxNumberOfNodes := 10
-	maxNumberOfPods := 10
+	maxNumberOfNodes := 200
+	maxNumberOfPods := 200
 	numberOfIterations := 10
 
 	type Measurement struct {
@@ -827,7 +827,10 @@ func (s *EvaluationTestSuite) xTest_AdvancedScheduler_shouldIterateOverNumber() 
 
 		print(numberOfNodes)
 		print(";")
-		_, _, _ = scheduler.Schedule()
+		for i := 0; i < 100; i++ {
+			_, _, _ = scheduler.Schedule()
+		}
+		println()
 
 	}
 }
